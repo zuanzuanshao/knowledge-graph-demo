@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Knowledge Graph Visualization with Relations</title>
+    <title>Interactive Knowledge Graph Visualization</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <style>
         body {
@@ -22,7 +22,7 @@
             background-color: white;
         }
         .node {
-            cursor: pointer;
+            cursor: move;
         }
         .link {
             stroke: #999;
@@ -31,6 +31,7 @@
         .relation-label {
             font-size: 10px;
             fill: #666;
+            pointer-events: none;
         }
         #info-panel {
             position: absolute;
@@ -440,6 +441,7 @@
         function dragged(event, d) {
             d.fx = event.x;
             d.fy = event.y;
+            simulation.alpha(1).restart(); // 重启模拟以更新其他节点位置
         }
 
         function dragended(event, d) {
