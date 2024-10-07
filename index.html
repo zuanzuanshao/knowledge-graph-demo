@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Knowledge Graph Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #graph {
+            flex-grow: 1;
+        }
+        .node {
+            cursor: pointer;
+        }
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.6;
+        }
+        #info-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #ccc;
+            padding: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="graph"></div>
+    <div id="info-panel"></div>
+
+    <script>
+        // 知识图谱数据
+        const graphData = {
+            "triples": [
+                {"subject": "人工智能", "relation": "包括", "object": "机器学习"},
+                {"subject": "人工智能", "relation": "包括", "object": "深度学习"},
+                {"subject": "人工智能", "relation": "包括", "object": "自然语言处理"},
+                {"subject": "人工智能", "relation": "包括", "object": "计算机视觉"},
+                {"subject": "人工智能", "relation": "包括", "object": "专家系统"},
+                {"subject": "人工智能", "relation": "包括", "object": "机器人学"},
+                {"subject": "机器学习", "relation": "类型", "object": "监督学习"},
+                {"subject": "机器学习", "relation": "类型", "object": "无监督学习"},
+                {"subject": "机器学习", "relation": "类型", "object": "强化学习"},
+                {"subject": "深度学习", "relation": "基于", "object": "神经网络"},
+                {"subject": "深度学习", "relation": "应用于", "object": "图像识别"},
+                {"subject": "深度学习", "relation": "应用于", "object": "语音识别"},
+                {"subject": "深度学习", "relation": "应用于", "object": "自然语言处理"},
+                {"subject": "自然语言处理", "relation": "任务", "object": "机器翻译"},
+                {"subject": "自然语言处理", "relation": "任务", "object": "情感分析"},
+                {"subject": "自然语言处理", "relation": "任务", "object": "文本摘要"},
+                {"subject": "计算机视觉", "relation": "任务", "object": "物体检测"},
+                {"subject": "计算机视觉", "relation": "任务", "object": "人脸识别"},
+                {"subject": "计算机视觉", "relation": "任务", "object": "图像分割"},
+                {"subject": "专家系统", "relation": "应用于", "object": "医疗诊断"},
+                {"subject": "专家系统", "relation": "应用于", "object": "金融分析"},
+                {"subject": "机器人学", "relation": "研究", "object": "运动规划"},
+                {"subject": "机器人学", "relation": "研究", "object": "感知系统"},
+                {"subject": "神经网络", "relation": "类型", "object": "卷积神经网络"},
+                {"subject": "神经网络", "relation": "类型", "object": "循环神经网络"},
+                {"subject": "神经网络", "relation": "类型", "object": "生成对抗网络"},
+                {"subject": "强化学习", "relation": "应用", "object": "游戏AI"},
+                {"subject": "强化学习", "relation": "应用", "object": "自动驾驶"},
+                {"subject": "大语言模型", "relation": "例子", "object": "GPT"},
+                {"subject": "大语言模型", "relation": "应用于", "object": "对话系统"},
+                {"subject": "人工智能", "relation": "涉及", "object": "伦理问题"},
+                {"subject": "人工智能", "relation": "涉及", "object": "隐私问题"}
+            ],
+            "entities": [
+                {"entity": "人工智能", "description": "创造能模仿或超越人类智能的计算机系统的科学和工程"},
+                {"entity": "机器学习", "description": "使计算机系统能够从数据中学习和改进的人工智能分支"},
+                {"entity": "深度学习", "description": "基于人工神经网络的机器学习子领域,能够自动学习数据的层次化表示"},
+                {"entity": "自然语言处理", "description": "使计算机能够理解、解释和生成人类语言的技术"},
+                {"entity": "计算机视觉", "description": "使计算机能够从图像或视频中获取高层次理解的领域"},
+                {"entity": "专家系统", "description": "模拟人类专家决策能力的计算机系统"},
+                {"entity": "机器人学", "description": "设计、制造、操作和使用机器人的多学科领域"},
+                {"entity": "监督学习", "description": "从标记的训练数据中学习的机器学习方法"},
+                {"entity": "无监督学习", "description": "从未标记数据中发现隐藏结构的机器学习方法"},
+                {"entity": "强化学习", "description": "通过与环境交互来学习最优策略的机器学习方法"},
+                {"entity": "神经网络", "description": "受生物神经网络启发的计算模型,是深度学习的基础"},
+                {"entity": "卷积神经网络", "description": "专门用于处理网格类数据(如图像)的神经网络类型"},
+                {"entity": "循环神经网络", "description": "能处理序列数据的神经网络类型,广泛用于自然语言处理"},
+                {"entity": "生成对抗网络", "description": "一种生成模型,通过对抗训练生成器和判别器来学习数据分布"},
+                {"entity": "大语言模型", "description": "能够理解和生成人类语言的大规模神经网络模型"},
+                {"entity": "GPT", "description": "Generative Pre-trained Transformer,一种强大的大语言模型"},
+                {"entity": "对话系统", "description": "能与人类进行自然语言交互的AI系统"},
+                {"entity": "图像识别", "description": "识别和分类图像中的物体或特征的技术"},
+                {"entity": "语音识别", "description": "将口述或语音转换为文本的技术"},
+                {"entity": "机器翻译", "description": "自动将文本从一种语言翻译成另一种语言的技术"},
+                {"entity": "情感分析", "description": "识别和提取文本中主观信息的过程"},
+                {"entity": "文本摘要", "description": "自动生成文本的简短、准确摘要的技术"},
+                {"entity": "物体检测", "description": "在图像或视频中识别和定位特定物体的技术"},
+                {"entity": "人脸识别", "description": "在图像或视频中识别或验证人脸的技术"},
+                {"entity": "图像分割", "description": "将数字图像分割成多个片段或物体的过程"},
+                {"entity": "医疗诊断", "description": "使用AI技术辅助医疗诊断和决策"},
+                {"entity": "金融分析", "description": "应用AI技术进行金融市场分析和预测"},
+                {"entity": "运动规划", "description": "为机器人设计最优运动路径的过程"},
+                {"entity": "感知系统", "description": "使机器人能够感知和理解其环境的系统"},
+                {"entity": "游戏AI", "description": "在电子游戏中模拟智能行为的技术"},
+                {"entity": "自动驾驶", "description": "无需人类操作的车辆驾驶技术"},
+                {"entity": "伦理问题", "description": "AI发展和应用中涉及的道德和价值观问题"},
+                {"entity": "隐私问题", "description": "AI技术对个人数据和隐私保护带来的挑战"}
+            ]
+        };
+
+        // 数据处理
+        const nodes = Array.from(new Set([...graphData.triples.map(d => d.subject), ...graphData.triples.map(d => d.object)])).map(name => ({id: name}));
+        const links = graphData.triples.map(d => ({source: d.subject, target: d.object, relation: d.relation}));
+
+        // 设置SVG
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        const svg = d3.select("#graph")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // 创建力导向图
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        // 绘制连接线
+        const link = svg.append("g")
+            .selectAll("line")
+            .data(links)
+            .enter().append("line")
+            .attr("class", "link");
+
+        // 绘制节点
+        const node = svg.append("g")
+            .selectAll("circle")
+            .data(nodes)
+            .enter().append("circle")
+            .attr("class", "node")
+            .attr("r", 5)
+            .attr("fill", d => d.id === "人工智能" ? "#ff0000" : "#1f77b4")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        // 添加节点标签
+        const label = svg.append("g")
+            .selectAll("text")
+            .data(nodes)
+            .enter().append("text")
+            .text(d => d.id)
+            .attr("font-size", 10)
+            .attr("dx", 12)
+            .attr("dy", 4);
+
+        // 更新力导向图
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+
+            label
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+        });
+
+        // 拖拽功能
+        function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        }
+
+        function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+        }
+
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+
+        // 点击节点显示信息
+        node.on("click", (event, d) => {
+            const entity = graphData.entities.find(e => e.entity === d.id);
+            const infoPanel = d3.select("#info-panel");
+            if (entity) {
+                infoPanel.html(`<h3>${entity.entity}</h3><p>${entity.description}</p>`);
+                infoPanel.style("display", "block");
+            } else {
+                infoPanel.style("display", "none");
+            }
+        });
+
+        // 点击空白处隐藏信息面板
+        svg.on("click", () => {
+            d3.select("#info-panel").style("display", "none");
+        });
+    </script>
+</body>
+</html>
