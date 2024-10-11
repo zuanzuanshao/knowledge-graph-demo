@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fullscreen Knowledge Graph Visualization</title>
+    <script src="https://unpkg.com/neo4j-driver@5.17.0/lib/browser/neo4j-web.min.js"></script>
+    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #viz {
+            width: 100%;
+            height: 100%;
+        }
+        .node-actions {
+            position: absolute;
+            display: none;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 5px;
+            z-index: 1000;
+        }
+        .action-button {
+            display: block;
+            margin: 5px;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .action-button:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div id="viz"></div>
+    <div id="node-actions" class="node-actions">
+        <button class="action-button" id="action1">操作 1</button>
+        <button class="action-button" id="action2">操作 2</button>
+        <button class="action-button" id="action3">操作 3</button>
+    </div>
+    <script>
+        const config = {
+            containerId: "viz",
+            neo4j: {
+                serverUrl: "bolt://3.236.131.58",
+                serverUser: "neo4j",
+                serverPassword: "parallels-profile-aptitude",
+            },
+            visConfig: {
+                nodes: {
+                    shape: "dot",
+                    color: "#A5C8E1",
+                    size: 20,
+                    font: {
+                        size: 12,
+                        color: "#333333"
+                    }
+                },
+                edges: {
+                    color: "#999999",
+                    arrows: {
+                        to: { enabled: true, scaleFactor: 0.5 }
+                    },
+                    font: {
+                        size: 10,
+                        color: "#666666"
+                    }
+                },
+                physics: {
+                    enabled: true,
+                    forceAtlas2Based: {
+                        gravitationalConstant: -26,
+                        centralGravity: 0.005,
+                        springLength: 230,
+                        springConstant: 0.18
+                    },
+                    maxVelocity: 146,
+                    solver: 'forceAtlas2Based',
+                    timestep: 0.35,
+                    stabilization: { iterations: 150 }
+                }
+            },
+            labels: {
+                Router: {
+                    label: "name",
+                },
+                VM: {
+                    label: "name",
+                },
+                DCT: {
+                    label: "name",
+                }
+            },
+            relationships: {
+                ROUTES: {
+                    thickness: 1,
+                    caption: false
+                },
+                CONTAINS: {
+                    thickness: 1,
+                    caption: false
+                },
+                CONNECTS: {
+                    thickness: 1,
+                    caption: false
+                },
+                HOLDS: {
+                    thickness: 1,
+                    caption: false
+                }
+            },
+            initialCypher: "MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 300"
+        };
+
+        const viz = new NeoVis.default(config);
+        viz.render();
+
+        viz.registerOnEvent("completed", (e) => {
+            console.log("Visualization completed");
+            setupNodeClickEvents();
+        });
+
+        function setupNodeClickEvents() {
+            const network = viz.network;
+            const nodeActions = document.getElementById('node-actions');
+
+            network.on("click", function (params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const canvasPosition = network.getPositions([nodeId])[nodeId];
+                    const domPosition = network.canvasToDOM(canvasPosition);
+
+                    nodeActions.style.left = `${domPosition.x}px`;
+                    nodeActions.style.top = `${domPosition.y}px`;
+                    nodeActions.style.display = 'block';
+                } else {
+                    nodeActions.style.display = 'none';
+                }
+            });
+
+            document.querySelectorAll('.action-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    console.log(`Clicked ${e.target.textContent} for node`);
+                    // Here you can add specific actions for each button
+                    nodeActions.style.display = 'none';
+                });
+            });
+        }
+
+        // 处理窗口大小变化
+        window.addEventListener('resize', function() {
+            if (viz && viz.network) {
+                viz.network.setSize(window.innerWidth, window.innerHeight);
+                viz.network.fit();
+            }
+        });
+    </script>
+</body>
+</html>
